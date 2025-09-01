@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>تسجيل الدخول - One ERP</title>
+  <style>
+    body{font-family:system-ui,-apple-system,"Segoe UI",Roboto;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f7f7f9;margin:0}
+    .card{background:#fff; padding:24px; border-radius:16px; box-shadow:0 10px 25px rgba(0,0,0,.06); width: 360px}
+    h1{font-size:1.25rem;margin:.25rem 0 1rem}
+    button{width:100%;border:0;border-radius:12px;padding:12px 14px;font-size:16px;cursor:pointer}
+    .gh{background:#24292f;color:#fff}
+    .out{margin-top:8px;background:#eee}
+    .msg{margin-top:12px;color:#444;font-size:.9rem; word-break: break-word;}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>تسجيل الدخول</h1>
+    <button class="gh" id="login">تابع بواسطة GitHub</button>
+    <button class="out" id="logout" style="display:none">تسجيل الخروج</button>
+    <div class="msg" id="msg"></div>
+  </div>
+
+  <!-- supabase-js من CDN (لا نحتاج مشروع محلي) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    // ⚠️ بعد حفظ الملف، عد لاحقًا لتحرير هاتين القيمتين من Supabase Studio → Settings → API
+    const SUPABASE_URL  = "<ضع هنا Project URL>";
+    const SUPABASE_ANON = "<ضع هنا anon public key>";
+
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+    const $login  = document.getElementById('login');
+    const $logout = document.getElementById('logout');
+    const $msg    = document.getElementById('msg');
+
+    function show(msg){ $msg.textContent = msg; }
+
+    async function refreshUI(){
+      const { data: { user } } = await client.auth.getUser();
+      if(user){
+        $login.style.display = 'none';
+        $logout.style.display = 'block';
+        show(`مرحبًا ${user.email || user.user_metadata?.user_name || 'مستخدم GitHub'}`);
+      } else {
+        $login.style.display = 'block';
+        $logout.style.display = 'none';
+        show('سجّل الدخول بواسطة GitHub.');
+      }
+    }
+
+    $login.onclick = async () => {
+      const { error } = await client.auth.signInWithOAuth({
+        provider: 'github',
+        options: { redirectTo: window.location.href } // عودة لنفس الصفحة بعد التفويض
+      });
+      if(error) show('خطأ في بدء تسجيل الدخول: ' + error.message);
+    };
+
+    $logout.onclick = async () => {
+      await client.auth.signOut();
+      await refreshUI();
+    };
+
+    refreshUI();
+  </script>
+</body>
+</html>
